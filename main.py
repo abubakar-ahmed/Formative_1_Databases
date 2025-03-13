@@ -143,3 +143,151 @@ class SocialFactorsResponse(SocialFactorsBase):
     
     class Config:
         from_attributes = True
+
+# Patients Collection Routes
+@app.post("/patients/", response_model=PatientResponse, status_code=status.HTTP_201_CREATED, tags=["Patients"])
+async def create_patient(patient: PatientBase, db = Depends(get_db)):
+    """
+    Create a new patient record.
+    """
+    cursor = db.cursor()
+    try:
+        # Insert patient record
+        query = """
+        INSERT INTO Patients (Age, Gender, Education_Level, Marital_Status, Occupation, Income_Level, Live_Area)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        """
+        values = (
+            patient.Age,
+            patient.Gender,
+            patient.Education_Level,
+            patient.Marital_Status,
+            patient.Occupation,
+            patient.Income_Level,
+            patient.Live_Area
+        )
+        
+        cursor.execute(query, values)
+        db.commit()
+        
+        # Get the auto-generated ID
+        patient_id = cursor.lastrowid
+        
+        # Fetch the created patient
+        cursor.execute("SELECT * FROM Patients WHERE Patient_ID = ?", (patient_id,))
+        new_patient = dict_fetch_one(cursor)
+        
+        return new_patient
+    except sqlite3.Error as err:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Database error: {str(err)}")
+    finally:
+        cursor.close()
+
+@app.get("/patients/", response_model=List[PatientResponse], tags=["Patients"])
+async def read_patients(skip: int = 0, limit: int = 100, db = Depends(get_db)):
+    """
+    Retrieve all patients with pagination.
+    """
+    cursor = db.cursor()
+    try:
+        cursor.execute("SELECT * FROM Patients LIMIT ? OFFSET ?", (limit, skip))
+        patients = dict_fetch_all(cursor)
+        return patients
+    except sqlite3.Error as err:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Database error: {str(err)}")
+    finally:
+        cursor.close()
+
+@app.get("/patients/{patient_id}", response_model=PatientResponse, tags=["Patients"])
+async def read_patient(patient_id: int, db = Depends(get_db)):
+    """
+    Retrieve a specific patient by ID.
+    """
+    cursor = db.cursor()
+    try:
+        cursor.execute("SELECT * FROM Patients WHERE Patient_ID = ?", (patient_id,))
+        patient = dict_fetch_one(cursor)
+        
+        if patient is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Patient with ID {patient_id} not found")
+        
+        return patient
+    except sqlite3.Error as err:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Database error: {str(err)}")
+    finally:
+        cursor.close()
+
+@app.put("/patients/{patient_id}", response_model=PatientResponse, tags=["Patients"])
+async def update_patient(patient_id: int, patient: PatientBase, db = Depends(get_db)):
+    """
+    Update a patient record.
+    """
+    cursor = db.cursor()
+    try:
+        # Check if patient exists
+        cursor.execute("SELECT * FROM Patients WHERE Patient_ID = ?", (patient_id,))
+        if dict_fetch_one(cursor) is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Patient with ID {patient_id} not found")
+        
+        # Update patient
+        query = """
+        UPDATE Patients 
+        SET Age = ?, Gender = ?, Education_Level = ?, Marital_Status = ?, 
+            Occupation = ?, Income_Level = ?, Live_Area = ? 
+        WHERE Patient_ID = ?
+        """
+        values = (
+            patient.Age,
+            patient.Gender,
+            patient.Education_Level,
+            patient.Marital_Status,
+            patient.Occupation,
+            patient.Income_Level,
+            patient.Live_Area,
+            patient_id
+        )
+        
+        cursor.execute(query, values)
+        db.commit()
+        
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=status.HTTP_304_NOT_MODIFIED, detail="Patient data was not modified")
+        
+        # Return updated patient
+        cursor.execute("SELECT * FROM Patients WHERE Patient_ID = ?", (patient_id,))
+        updated_patient = dict_fetch_one(cursor)
+        
+        return updated_patient
+    except sqlite3.Error as err:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Database error: {str(err)}")
+    finally:
+        cursor.close()
+
+@app.delete("/patients/{patient_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Patients"])
+async def delete_patient(patient_id: int, db = Depends(get_db)):
+    """
+    Delete a patient record.
+    """
+    cursor = db.cursor()
+    try:
+        # Check if patient exists
+        cursor.execute("SELECT * FROM Patients WHERE Patient_ID = ?", (patient_id,))
+        if dict_fetch_one(cursor) is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"Patient with ID {patient_id} not found")
+        
+        # Delete related data first due to foreign key constraints
+        cursor.execute("DELETE FROM Social_Factors WHERE Patient_ID = ?", (patient_id,))
+        cursor.execute("DELETE FROM Medical_History WHERE Patient_ID = ?", (patient_id,))
+        
+        # Delete patient
+        cursor.execute("DELETE FROM Patients WHERE Patient_ID = ?", (patient_id,))
+        db.commit()
+        
+        return None
+    except sqlite3.Error as err:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Database error: {str(err)}")
+    finally:
+        cursor.close()
