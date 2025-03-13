@@ -456,3 +456,152 @@ async def delete_medical_history(patient_id: int, db = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Database error: {str(err)}")
     finally:
         cursor.close()
+
+# Social Factors Routes
+@app.post("/social-factors/", response_model=SocialFactorsResponse, status_code=status.HTTP_201_CREATED, tags=["Social Factors"])
+async def create_social_factors(social_factors: SocialFactorsCreate, db = Depends(get_db)):
+    """
+    Create new social factors record.
+    """
+    cursor = db.cursor()
+    try:
+        # Check if patient exists
+        cursor.execute("SELECT * FROM Patients WHERE Patient_ID = ?", (social_factors.Patient_ID,))
+        if dict_fetch_one(cursor) is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+                               detail=f"Patient with ID {social_factors.Patient_ID} not found")
+        
+        # Check if social factors already exist
+        cursor.execute("SELECT * FROM Social_Factors WHERE Patient_ID = ?", (social_factors.Patient_ID,))
+        if dict_fetch_one(cursor) is not None:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
+                               detail=f"Social factors already exist for patient ID {social_factors.Patient_ID}")
+        
+        # Insert social factors
+        query = """
+        INSERT INTO Social_Factors (Patient_ID, Social_Support, Stress_Factors, Medication_Adherence)
+        VALUES (?, ?, ?, ?)
+        """
+        values = (
+            social_factors.Patient_ID,
+            social_factors.Social_Support,
+            social_factors.Stress_Factors,
+            social_factors.Medication_Adherence
+        )
+        
+        cursor.execute(query, values)
+        db.commit()
+        
+        # Return created record
+        cursor.execute("SELECT * FROM Social_Factors WHERE Patient_ID = ?", (social_factors.Patient_ID,))
+        new_social_factors = dict_fetch_one(cursor)
+        
+        return new_social_factors
+    except sqlite3.Error as err:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Database error: {str(err)}")
+    finally:
+        cursor.close()
+
+@app.get("/social-factors/", response_model=List[SocialFactorsResponse], tags=["Social Factors"])
+async def read_social_factors(skip: int = 0, limit: int = 100, db = Depends(get_db)):
+    """
+    Retrieve all social factors records with pagination.
+    """
+    cursor = db.cursor()
+    try:
+        cursor.execute("SELECT * FROM Social_Factors LIMIT ? OFFSET ?", (limit, skip))
+        social_factors = dict_fetch_all(cursor)
+        return social_factors
+    except sqlite3.Error as err:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Database error: {str(err)}")
+    finally:
+        cursor.close()
+
+@app.get("/social-factors/{patient_id}", response_model=SocialFactorsResponse, tags=["Social Factors"])
+async def read_social_factor(patient_id: int, db = Depends(get_db)):
+    """
+    Retrieve social factors for a specific patient.
+    """
+    cursor = db.cursor()
+    try:
+        cursor.execute("SELECT * FROM Social_Factors WHERE Patient_ID = ?", (patient_id,))
+        social_factors = dict_fetch_one(cursor)
+        
+        if social_factors is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+                               detail=f"Social factors for patient ID {patient_id} not found")
+        
+        return social_factors
+    except sqlite3.Error as err:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Database error: {str(err)}")
+    finally:
+        cursor.close()
+
+@app.put("/social-factors/{patient_id}", response_model=SocialFactorsResponse, tags=["Social Factors"])
+async def update_social_factors(patient_id: int, social_factors: SocialFactorsBase, db = Depends(get_db)):
+    """
+    Update social factors record.
+    """
+    cursor = db.cursor()
+    try:
+        # Check if social factors exist
+        cursor.execute("SELECT * FROM Social_Factors WHERE Patient_ID = ?", (patient_id,))
+        if dict_fetch_one(cursor) is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+                               detail=f"Social factors for patient ID {patient_id} not found")
+        
+        # Update social factors
+        query = """
+        UPDATE Social_Factors 
+        SET Social_Support = ?, Stress_Factors = ?, Medication_Adherence = ?
+        WHERE Patient_ID = ?
+        """
+        values = (
+            social_factors.Social_Support,
+            social_factors.Stress_Factors,
+            social_factors.Medication_Adherence,
+            patient_id
+        )
+        
+        cursor.execute(query, values)
+        db.commit()
+        
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=status.HTTP_304_NOT_MODIFIED, 
+                               detail="Social factors data was not modified")
+        
+        # Return updated record
+        cursor.execute("SELECT * FROM Social_Factors WHERE Patient_ID = ?", (patient_id,))
+        updated_social_factors = dict_fetch_one(cursor)
+        
+        return updated_social_factors
+    except sqlite3.Error as err:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Database error: {str(err)}")
+    finally:
+        cursor.close()
+
+@app.delete("/social-factors/{patient_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Social Factors"])
+async def delete_social_factors(patient_id: int, db = Depends(get_db)):
+    """
+    Delete social factors record.
+    """
+    cursor = db.cursor()
+    try:
+        # Check if social factors exist
+        cursor.execute("SELECT * FROM Social_Factors WHERE Patient_ID = ?", (patient_id,))
+        if dict_fetch_one(cursor) is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+                               detail=f"Social factors for patient ID {patient_id} not found")
+        
+        # Delete social factors
+        cursor.execute("DELETE FROM Social_Factors WHERE Patient_ID = ?", (patient_id,))
+        db.commit()
+        
+        return None
+    except sqlite3.Error as err:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Database error: {str(err)}")
+    finally:
+        cursor.close()
