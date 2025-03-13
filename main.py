@@ -644,7 +644,3 @@ async def get_complete_patient_data(patient_id: int, db = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Database error: {str(err)}")
     finally:
         cursor.close()
-
-# Run the application
-if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
