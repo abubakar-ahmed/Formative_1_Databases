@@ -4,6 +4,7 @@ from pydantic import BaseModel, validator
 from typing import List, Optional
 import uvicorn
 import sqlite3
+import os
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -23,7 +24,8 @@ app.add_middleware(
 
 # Database dependency
 def get_db():
-    conn = sqlite3.connect('schizophrenia_dataset.db', check_same_thread=False)
+    db_path = os.path.join(os.getcwd(), "persistent_data", "schizophrenia_dataset.db")
+    conn = sqlite3.connect(db_path, check_same_thread=False)
     conn.row_factory = sqlite3.Row
     try:
         yield conn
