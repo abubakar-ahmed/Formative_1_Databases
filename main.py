@@ -605,3 +605,44 @@ async def delete_social_factors(patient_id: int, db = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Database error: {str(err)}")
     finally:
         cursor.close()
+
+# Aggregate Route - Get complete patient data
+@app.get("/patient-complete/{patient_id}", tags=["Aggregated Data"])
+async def get_complete_patient_data(patient_id: int, db = Depends(get_db)):
+    """
+    Retrieve complete patient data including medical history and social factors.
+    """
+    cursor = db.cursor()
+    try:
+        # Get patient data
+        cursor.execute("SELECT * FROM Patients WHERE Patient_ID = ?", (patient_id,))
+        patient = dict_fetch_one(cursor)
+        
+        if patient is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+                               detail=f"Patient with ID {patient_id} not found")
+        
+        # Get medical history
+        cursor.execute("SELECT * FROM Medical_History WHERE Patient_ID = ?", (patient_id,))
+        medical_history = dict_fetch_one(cursor)
+        
+        # Get social factors
+        cursor.execute("SELECT * FROM Social_Factors WHERE Patient_ID = ?", (patient_id,))
+        social_factors = dict_fetch_one(cursor)
+        
+        # Combine all data
+        complete_data = {
+            "patient": patient,
+            "medical_history": medical_history,
+            "social_factors": social_factors
+        }
+        
+        return complete_data
+    except sqlite3.Error as err:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Database error: {str(err)}")
+    finally:
+        cursor.close()
+
+# Run the application
+if __name__ == "__main__":
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
