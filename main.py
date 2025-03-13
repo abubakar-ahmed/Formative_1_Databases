@@ -291,3 +291,168 @@ async def delete_patient(patient_id: int, db = Depends(get_db)):
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Database error: {str(err)}")
     finally:
         cursor.close()
+
+# Medical History Routes
+@app.post("/medical-history/", response_model=MedicalHistoryResponse, status_code=status.HTTP_201_CREATED, tags=["Medical History"])
+async def create_medical_history(medical_history: MedicalHistoryCreate, db = Depends(get_db)):
+    """
+    Create a new medical history record.
+    """
+    cursor = db.cursor()
+    try:
+        # Check if patient exists
+        cursor.execute("SELECT * FROM Patients WHERE Patient_ID = ?", (medical_history.Patient_ID,))
+        if dict_fetch_one(cursor) is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+                               detail=f"Patient with ID {medical_history.Patient_ID} not found")
+        
+        # Check if medical history already exists
+        cursor.execute("SELECT * FROM Medical_History WHERE Patient_ID = ?", (medical_history.Patient_ID,))
+        if dict_fetch_one(cursor) is not None:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, 
+                               detail=f"Medical history already exists for patient ID {medical_history.Patient_ID}")
+        
+        # Insert medical history
+        query = """
+        INSERT INTO Medical_History 
+        (Patient_ID, Diagnosis, Disease_Duration, Hospitalizations, Family_History, Substance_Use, 
+        Suicide_Attempt, Positive_Symptom_Score, Negative_Symptom_Score, GAF_Score)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """
+        values = (
+            medical_history.Patient_ID,
+            medical_history.Diagnosis,
+            medical_history.Disease_Duration,
+            medical_history.Hospitalizations,
+            medical_history.Family_History,
+            medical_history.Substance_Use,
+            medical_history.Suicide_Attempt,
+            medical_history.Positive_Symptom_Score,
+            medical_history.Negative_Symptom_Score,
+            medical_history.GAF_Score
+        )
+        
+        cursor.execute(query, values)
+        db.commit()
+        
+        # Return created record
+        cursor.execute("SELECT * FROM Medical_History WHERE Patient_ID = ?", (medical_history.Patient_ID,))
+        new_medical_history = dict_fetch_one(cursor)
+        
+        return new_medical_history
+    except sqlite3.Error as err:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Database error: {str(err)}")
+    finally:
+        cursor.close()
+
+@app.get("/medical-history/", response_model=List[MedicalHistoryResponse], tags=["Medical History"])
+async def read_medical_histories(skip: int = 0, limit: int = 100, db = Depends(get_db)):
+    """
+    Retrieve all medical history records with pagination.
+    """
+    cursor = db.cursor()
+    try:
+        cursor.execute("SELECT * FROM Medical_History LIMIT ? OFFSET ?", (limit, skip))
+        medical_histories = dict_fetch_all(cursor)
+        return medical_histories
+    except sqlite3.Error as err:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Database error: {str(err)}")
+    finally:
+        cursor.close()
+
+@app.get("/medical-history/{patient_id}", response_model=MedicalHistoryResponse, tags=["Medical History"])
+async def read_medical_history(patient_id: int, db = Depends(get_db)):
+    """
+    Retrieve medical history for a specific patient.
+    """
+    cursor = db.cursor()
+    try:
+        cursor.execute("SELECT * FROM Medical_History WHERE Patient_ID = ?", (patient_id,))
+        medical_history = dict_fetch_one(cursor)
+        
+        if medical_history is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+                               detail=f"Medical history for patient ID {patient_id} not found")
+        
+        return medical_history
+    except sqlite3.Error as err:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Database error: {str(err)}")
+    finally:
+        cursor.close()
+
+@app.put("/medical-history/{patient_id}", response_model=MedicalHistoryResponse, tags=["Medical History"])
+async def update_medical_history(patient_id: int, medical_history: MedicalHistoryBase, db = Depends(get_db)):
+    """
+    Update a medical history record.
+    """
+    cursor = db.cursor()
+    try:
+        # Check if medical history exists
+        cursor.execute("SELECT * FROM Medical_History WHERE Patient_ID = ?", (patient_id,))
+        if dict_fetch_one(cursor) is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+                               detail=f"Medical history for patient ID {patient_id} not found")
+        
+        # Update medical history
+        query = """
+        UPDATE Medical_History 
+        SET Diagnosis = ?, Disease_Duration = ?, Hospitalizations = ?,
+            Family_History = ?, Substance_Use = ?, Suicide_Attempt = ?,
+            Positive_Symptom_Score = ?, Negative_Symptom_Score = ?, GAF_Score = ?
+        WHERE Patient_ID = ?
+        """
+        values = (
+            medical_history.Diagnosis,
+            medical_history.Disease_Duration,
+            medical_history.Hospitalizations,
+            medical_history.Family_History,
+            medical_history.Substance_Use,
+            medical_history.Suicide_Attempt,
+            medical_history.Positive_Symptom_Score,
+            medical_history.Negative_Symptom_Score,
+            medical_history.GAF_Score,
+            patient_id
+        )
+        
+        cursor.execute(query, values)
+        db.commit()
+        
+        if cursor.rowcount == 0:
+            raise HTTPException(status_code=status.HTTP_304_NOT_MODIFIED, 
+                               detail="Medical history data was not modified")
+        
+        # Return updated record
+        cursor.execute("SELECT * FROM Medical_History WHERE Patient_ID = ?", (patient_id,))
+        updated_medical_history = dict_fetch_one(cursor)
+        
+        return updated_medical_history
+    except sqlite3.Error as err:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Database error: {str(err)}")
+    finally:
+        cursor.close()
+
+@app.delete("/medical-history/{patient_id}", status_code=status.HTTP_204_NO_CONTENT, tags=["Medical History"])
+async def delete_medical_history(patient_id: int, db = Depends(get_db)):
+    """
+    Delete a medical history record.
+    """
+    cursor = db.cursor()
+    try:
+        # Check if medical history exists
+        cursor.execute("SELECT * FROM Medical_History WHERE Patient_ID = ?", (patient_id,))
+        if dict_fetch_one(cursor) is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, 
+                               detail=f"Medical history for patient ID {patient_id} not found")
+        
+        # Delete medical history
+        cursor.execute("DELETE FROM Medical_History WHERE Patient_ID = ?", (patient_id,))
+        db.commit()
+        
+        return None
+    except sqlite3.Error as err:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Database error: {str(err)}")
+    finally:
+        cursor.close()
