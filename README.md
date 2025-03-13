@@ -12,7 +12,7 @@ You can interact with the API documentation at:
 
 ## Database Schema
 The database consists of three main tables:
-1. Patients
+1. **Patients**
 - Patient_ID (Primary Key, Auto-increment)
 - Age
 - Gender
@@ -22,7 +22,7 @@ The database consists of three main tables:
 - Income_Level
 - Live_Area
 
-2. Medical_History
+2. **Medical_History**
 - Patient_ID (Foreign Key)
 - Diagnosis
 - Disease_Duration
@@ -34,14 +34,13 @@ The database consists of three main tables:
 - Negative_Symptom_Score
 - GAF_Score
 
-3. Social_Factors
+3. **Social_Factors**
 - Patient_ID (Foreign Key)
 - Social_Support
 - Stress_Factors
 - Medication_Adherence
 
 ## Technical Stack
-
 - **FastAPI:** Modern, fast web framework for building APIs with Python
 - **SQLite:** Lightweight database for storing patient data
 - **Pydantic:** Data validation and settings management
@@ -49,31 +48,31 @@ The database consists of three main tables:
 
 ## Installation
 1. Clone the repository
-   ```
+   ``` bash
    git clone https://github.com/yourusername/schizophrenia-database-api.git
    cd schizophrenia-database-api
    ```
 2. Create a virtual environment
-   ```
+   ``` bash
    python -m venv env
    source env/bin/activate  # On Windows, use: env\Scripts\activate
    ```
 3. Install dependencies
-   ```
+   ``` bash
    pip install fastapi uvicorn sqlite3 pydantic
    ```
 4. Create the database directory
-   ```
+   ``` bash
    mkdir -p persistent_data
    ```
 5. Initialize the database
-   ```
+   ``` bash
    python init_db.py
    ```
 
 ## Running the API Locally
 Start the server with:
-```
+``` bash
 uvicorn main:app --reload
 ```
 The API will be available at [http://127.0.0.1:8000]
