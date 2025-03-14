@@ -4,6 +4,84 @@ The Database
 ## Overview
 This project provides a FastAPI-based web service for managing a schizophrenia patient database. The API allows you to create, read, update, and delete patient records, medical histories, and social factors data.
 
+## Database Schema
+The database consists of the following tables:
+
+### 1. `Patients`
+Stores general patient information.
+```sql
+CREATE TABLE Patients (
+    Patient_ID INT AUTO_INCREMENT PRIMARY KEY, -- Unique identifier for each patient
+    Age INT, -- Patient's age
+    Gender INT, -- Gender (e.g., 0 for Female, 1 for Male)
+    Education_Level INT, -- Level of education (e.g., 1 for Primary, 5 for University)
+    Marital_Status INT, -- Marital status (e.g., 1 for Single, 2 for Married)
+    Occupation INT, -- Employment status
+    Income_Level INT, -- Income level (e.g., 1 for Low, 2 for High)
+    Live_Area INT -- Area of residence (e.g., 0 for Urban, 1 for Rural)
+);
+```
+
+### 2. `Medical_History`
+Stores patient medical history, linking to `Patients` via `Patient_ID`.
+```sql
+CREATE TABLE Medical_History (
+    History_ID INT AUTO_INCREMENT PRIMARY KEY, -- Unique identifier for medical history records
+    Patient_ID INT, -- Foreign key referencing Patients table
+    Diagnosis INT, -- Diagnosis code
+    Disease_Duration INT, -- Duration of the disease in months
+    Hospitalizations INT, -- Number of times hospitalized
+    FOREIGN KEY (Patient_ID) REFERENCES Patients(Patient_ID) ON DELETE CASCADE
+);
+```
+
+### 3. `Treatment`
+Stores treatment-related data.
+```sql
+CREATE TABLE Treatment (
+    Treatment_ID INT AUTO_INCREMENT PRIMARY KEY, -- Unique identifier for treatment records
+    Patient_ID INT, -- Foreign key referencing Patients table
+    Medication_Adherence INT, -- Medication adherence level (e.g., 0 for Poor, 2 for Excellent)
+    Social_Support INT, -- Level of social support
+    Stress_Factors INT, -- Stress level factors
+    FOREIGN KEY (Patient_ID) REFERENCES Patients(Patient_ID) ON DELETE CASCADE
+);
+```
+
+## Stored Procedure
+A stored procedure to insert records into `Medical_History` to standardize data entry and maintain integrity.
+```sql
+DELIMITER $$
+CREATE PROCEDURE InsertMedicalHistory(
+    IN p_Patient_ID INT,
+    IN p_Diagnosis INT,
+    IN p_Disease_Duration INT,
+    IN p_Hospitalizations INT
+)
+BEGIN
+    INSERT INTO Medical_History (Patient_ID, Diagnosis, Disease_Duration, Hospitalizations)
+    VALUES (p_Patient_ID, p_Diagnosis, p_Disease_Duration, p_Hospitalizations);
+END $$
+DELIMITER ;
+```
+
+## Trigger
+A trigger that logs changes to patient records before updates occur.
+```sql
+DELIMITER $$
+CREATE TRIGGER Before_Patient_Update
+BEFORE UPDATE ON Patients
+FOR EACH ROW
+BEGIN
+    INSERT INTO Change_Log (Patient_ID, Change_Time)
+    VALUES (OLD.Patient_ID, NOW());
+END $$
+DELIMITER ;
+```
+
+## ERD Diagram
+An Entity-Relationship Diagram (ERD) visually represents the database schema and relationships between tables. The ERD diagram is included in the project folder
+
 ## API Live Deployment
 The API is deployed and accessible at: [https://formative-1-databases.onrender.com]
 You can interact with the API documentation at:
