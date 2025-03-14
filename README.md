@@ -1,8 +1,24 @@
 # Schizophrenia Database
-The Database 
+
+## Table of Contents
+- [Overview](#overview)
+- [Database Schema](#database-schema)
+  - [Patients Table](#1-patients-table)
+  - [Medical History Table](#2-medical-history-table)
+  - [Social Factors Table](#3-social-factors-table)
+- [Stored Procedure](#stored-procedure)
+- [Trigger](#trigger)
+- [ERD Diagram](#erd-diagram)
+- [API Live Deployment](#api-live-deployment)
+- [Technical Stack](#technical-stack)
+- [Installation](#installation)
+- [Running the API Locally](#running-the-api-locally)
+- [API Endpoints](#api-endpoints)
+- [Example Usage](#example-usage)
+- [References](#references)
 
 ## Overview
-This project provides a FastAPI-based web service for managing a schizophrenia patient database. The API allows you to create, read, update, and delete patient records, medical histories, and social factors data.
+This project provides a FastAPI-based web service for managing a schizophrenia patient database. The API allows you to create, read, update, and delete patient records, medical histories, and social factors data. This project utilizes a dataset sourced from Kaggle, containing anonymized schizophrenia patient records. The dataset includes demographic details, medical history, and social factors that impact schizophrenia patients. It provides a structured basis for database operations and API interactions. Additionally, a machine learning model has been developed to analyze the data and make predictions based on patient attributes.
 
 ## Database Schema
 
@@ -107,31 +123,31 @@ You can interact with the API documentation at:
 
 ## Installation
 1. Clone the repository
-   ``` bash
+   ```bash
    git clone https://github.com/yourusername/schizophrenia-database-api.git
    cd schizophrenia-database-api
    ```
 2. Create a virtual environment
-   ``` bash
+   ```bash
    python -m venv env
    source env/bin/activate  # On Windows, use: env\Scripts\activate
    ```
 3. Install dependencies
-   ``` bash
+   ```bash
    pip install fastapi uvicorn sqlite3 pydantic
    ```
 4. Create the database directory
-   ``` bash
+   ```bash
    mkdir -p persistent_data
    ```
 5. Initialize the database
-   ``` bash
+   ```bash
    python init_db.py
    ```
 
 ## Running the API Locally
 Start the server with:
-``` bash
+```bash
 uvicorn main:app --reload
 ```
 The API will be available at [http://127.0.0.1:8000]
@@ -160,7 +176,7 @@ The API will be available at [http://127.0.0.1:8000]
 
 ## Example Usage
 ### Creating a Patient
-```
+```bash
 curl -X 'POST' \
   'https://formative-1-databases.onrender.com/patients/' \
   -H 'Content-Type: application/json' \
@@ -175,7 +191,7 @@ curl -X 'POST' \
 }'
 ```
 ### Adding Medical History
-```
+```bash
 curl -X 'POST' \
   'https://formative-1-databases.onrender.com/medical-history/' \
   -H 'Content-Type: application/json' \
@@ -193,7 +209,7 @@ curl -X 'POST' \
 }'
 ```
 ### Adding Social Factors
-```
+```bash
 curl -X 'POST' \
   'https://formative-1-databases.onrender.com/social-factors/' \
   -H 'Content-Type: application/json' \
@@ -204,3 +220,6 @@ curl -X 'POST' \
   "Medication_Adherence": 1
 }'
 ```
+
+## References
+[Schizophrenia dataset](https://www.kaggle.com/datasets/asinow/schizohealth-dataset?select=schizophrenia_dataset.csv)
