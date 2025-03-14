@@ -10,9 +10,6 @@ The database consists of three tables:
 1. **patients**  
 2. **medical_history**  
 3. **social_factors**  
-
-### ERD Diagram  
-Below is the **Entity-Relationship Diagram (ERD)** representing the database schema:  
 ---
 
 ## **Tables and Schema**
