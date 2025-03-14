@@ -5,48 +5,62 @@ The Database
 This project provides a FastAPI-based web service for managing a schizophrenia patient database. The API allows you to create, read, update, and delete patient records, medical histories, and social factors data.
 
 ## Database Schema
-The database consists of the following tables:
 
-### 1. `Patients`
+The database consists of three tables:  
+1. **patients**  
+2. **medical_history**  
+3. **social_factors**  
+
+### ERD Diagram  
+Below is the **Entity-Relationship Diagram (ERD)** representing the database schema:  
+---
+
+## **Tables and Schema**
+
+### 1. `patients` Table
 Stores general patient information.
-```sql
-CREATE TABLE Patients (
-    Patient_ID INT AUTO_INCREMENT PRIMARY KEY, -- Unique identifier for each patient
-    Age INT, -- Patient's age
-    Gender INT, -- Gender (e.g., 0 for Female, 1 for Male)
-    Education_Level INT, -- Level of education (e.g., 1 for Primary, 5 for University)
-    Marital_Status INT, -- Marital status (e.g., 1 for Single, 2 for Married)
-    Occupation INT, -- Employment status
-    Income_Level INT, -- Income level (e.g., 1 for Low, 2 for High)
-    Live_Area INT -- Area of residence (e.g., 0 for Urban, 1 for Rural)
-);
-```
 
-### 2. `Medical_History`
-Stores patient medical history, linking to `Patients` via `Patient_ID`.
-```sql
-CREATE TABLE Medical_History (
-    History_ID INT AUTO_INCREMENT PRIMARY KEY, -- Unique identifier for medical history records
-    Patient_ID INT, -- Foreign key referencing Patients table
-    Diagnosis INT, -- Diagnosis code
-    Disease_Duration INT, -- Duration of the disease in months
-    Hospitalizations INT, -- Number of times hospitalized
-    FOREIGN KEY (Patient_ID) REFERENCES Patients(Patient_ID) ON DELETE CASCADE
-);
-```
+| Column Name      | Data Type | Description |
+|-----------------|----------|-------------|
+| `Patient_ID`    | INT (PK) | Unique ID for each patient |
+| `Age`           | INT      | Patient's age |
+| `Gender`        | INT      | Gender (0 = Female, 1 = Male) |
+| `Education_Level` | INT    | Education level of the patient |
+| `Marital_Status` | INT     | Marital status |
+| `Occupation`    | INT      | Job type/category |
+| `Income_Level`  | INT      | Income classification |
+| `Live_Area`     | INT      | Area of residence |
 
-### 3. `Treatment`
-Stores treatment-related data.
-```sql
-CREATE TABLE Treatment (
-    Treatment_ID INT AUTO_INCREMENT PRIMARY KEY, -- Unique identifier for treatment records
-    Patient_ID INT, -- Foreign key referencing Patients table
-    Medication_Adherence INT, -- Medication adherence level (e.g., 0 for Poor, 2 for Excellent)
-    Social_Support INT, -- Level of social support
-    Stress_Factors INT, -- Stress level factors
-    FOREIGN KEY (Patient_ID) REFERENCES Patients(Patient_ID) ON DELETE CASCADE
-);
-```
+---
+
+### 2. `medical_history` Table
+Stores patients' medical history details.
+
+| Column Name             | Data Type | Description |
+|------------------------|----------|-------------|
+| `Patient_ID`          | INT (FK) | References `patients.Patient_ID` |
+| `Diagnosis`           | INT      | Disease diagnosis code |
+| `Disease_Duration`    | INT      | Duration of the disease in months |
+| `Hospitalizations`    | INT      | Number of hospital admissions |
+| `Family_History`      | INT      | Family history of the disease (0 = No, 1 = Yes) |
+| `Substance_Use`       | INT      | History of substance use (0 = No, 1 = Yes) |
+| `Suicide_Attempt`     | INT      | Any suicide attempt (0 = No, 1 = Yes) |
+| `Positive_Symptom_Score` | INT   | Score for positive symptoms |
+| `Negative_Symptom_Score` | INT   | Score for negative symptoms |
+| `GAF_Score`          | INT      | Global Assessment of Functioning score |
+
+---
+
+### 3. `social_factors` Table
+Stores social and psychological aspects affecting the patient.
+
+| Column Name          | Data Type | Description |
+|---------------------|----------|-------------|
+| `Patient_ID`       | INT (FK) | References `patients.Patient_ID` |
+| `Social_Support`   | INT      | Level of social support (0 = Low, 1 = High) |
+| `Stress_Factors`   | INT      | Stress level (0 = Low, 2 = High) |
+| `Medication_Adherence` | INT  | Adherence to medication (0 = Poor, 2 = Excellent) |
+
 
 ## Stored Procedure
 A stored procedure to insert records into `Medical_History` to standardize data entry and maintain integrity.
